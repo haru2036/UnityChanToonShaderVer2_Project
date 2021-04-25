@@ -15,6 +15,7 @@ Shader "UnityChanToonShader/Toon_DoubleShadeWithFeather_TransClipping_StencilOut
         [Toggle(_)] _Inverse_Clipping ("Inverse_Clipping", Float ) = 0
         _Clipping_Level ("Clipping_Level", Range(0, 1)) = 0
         _Tweak_transparency ("Tweak_transparency", Range(-1, 1)) = 0
+        _Tweak_transparency_when_stencil_passed ("Tweak_transparency_When_Stencil_Passed", Range(-1, 1)) = 0
         _MainTex ("BaseMap", 2D) = "white" {}
         [HideInInspector] _BaseMap ("BaseMap", 2D) = "white" {}
         _BaseColor ("BaseColor", Color) = (1,1,1,1)
@@ -192,7 +193,7 @@ Shader "UnityChanToonShader/Toon_DoubleShadeWithFeather_TransClipping_StencilOut
             #include "UCTS_Outline.cginc"
             ENDCG
         }
-//ToonCoreStart
+        //ToonCoreStart
         Pass {
             Name "FORWARD"
             Tags {
@@ -265,6 +266,52 @@ Shader "UnityChanToonShader/Toon_DoubleShadeWithFeather_TransClipping_StencilOut
 
             ENDCG
         }
+
+        Pass{
+            Name "FORWARD_IF_STENCIL_PASSED"
+            Tags {
+                "LightMode"="ForwardBase"
+            }
+            Blend SrcAlpha OneMinusSrcAlpha
+            Cull[_CullMode]
+            
+            Stencil {
+                Ref[_StencilNo]
+                Comp Equal
+                Pass Keep
+                Fail Keep
+            }
+            
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag_
+            //#define UNITY_PASS_FORWARDBASE
+            #include "UnityCG.cginc"
+            #include "AutoLight.cginc"
+            #include "Lighting.cginc"
+            #pragma multi_compile_fwdbase_fullshadows
+            #pragma multi_compile_fog
+            #pragma only_renderers d3d9 d3d11 glcore gles gles3 metal vulkan xboxone ps4 switch
+            #pragma target 3.0
+
+            
+            float  _Tweak_transparency_when_stencil_passed;
+
+            //v.2.0.4
+            #pragma multi_compile _IS_CLIPPING_TRANSMODE
+            #pragma multi_compile _IS_PASS_FWDBASE
+            //v.2.0.7
+            #pragma multi_compile _EMISSIVE_SIMPLE _EMISSIVE_ANIMATION
+            //
+            #include "UCTS_DoubleShadeWithFeather.cginc"
+            float4 frag_(VertexOutput i, fixed facing : VFACE) : SV_TARGET {
+                _Tweak_transparency = _Tweak_transparency_when_stencil_passed;
+                return frag(i, facing);
+            }
+
+            ENDCG
+        }
+
         Pass {
             Name "ShadowCaster"
             Tags {

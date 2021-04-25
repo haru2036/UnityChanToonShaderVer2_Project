@@ -69,6 +69,7 @@ namespace UnityChan
         MaterialProperty clippingMask = null;
         MaterialProperty clipping_Level = null;
         MaterialProperty tweak_transparency = null;
+        MaterialProperty tweak_transparency_stencil_passed = null;
         MaterialProperty mainTex = null;
         MaterialProperty baseColor = null;
         MaterialProperty firstShadeMap = null;
@@ -158,6 +159,7 @@ namespace UnityChan
             clippingMask = FindProperty("_ClippingMask", props, false);
             clipping_Level = FindProperty("_Clipping_Level", props, false);
             tweak_transparency = FindProperty("_Tweak_transparency", props, false);
+            tweak_transparency_stencil_passed = FindProperty("_Tweak_transparency_when_stencil_passed", props, false);
             mainTex = FindProperty("_MainTex", props);
             baseColor = FindProperty("_BaseColor", props);
             firstShadeMap = FindProperty("_1st_ShadeMap", props);
@@ -654,6 +656,7 @@ namespace UnityChan
 
             GUILayout.Label("For _TransClipping Shader", EditorStyles.boldLabel);
             m_MaterialEditor.RangeProperty(tweak_transparency, "Transparency Level");
+            m_MaterialEditor.RangeProperty(tweak_transparency_stencil_passed, "Transparency Level(Stencil Area)");
 
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.PrefixLabel("Use BaseMap α as Clipping Mask");
