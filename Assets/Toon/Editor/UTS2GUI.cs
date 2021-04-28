@@ -656,7 +656,9 @@ namespace UnityChan
 
             GUILayout.Label("For _TransClipping Shader", EditorStyles.boldLabel);
             m_MaterialEditor.RangeProperty(tweak_transparency, "Transparency Level");
-            m_MaterialEditor.RangeProperty(tweak_transparency_stencil_passed, "Transparency Level(Stencil Area)");
+            if(tweak_transparency_stencil_passed != null){
+                m_MaterialEditor.RangeProperty(tweak_transparency_stencil_passed, "Transparency Level(Stencil Area)");
+            }
 
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.PrefixLabel("Use BaseMap α as Clipping Mask");
