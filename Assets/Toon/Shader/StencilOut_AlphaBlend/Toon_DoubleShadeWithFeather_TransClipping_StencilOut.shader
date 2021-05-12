@@ -3,7 +3,7 @@
 //nobuyuki@unity3d.com
 //https://github.com/unity3d-jp/UnityChanToonShaderVer2_Project
 //(C)Unity Technologies Japan/UCL
-Shader "UnityChanToonShader/Toon_DoubleShadeWithFeather_TransClipping_StencilOut" {
+Shader "UnityChanToonShader/AlphaBlendStencil/Toon_DoubleShadeWithFeather_TransClipping_StencilOut" {
     Properties {
         [HideInInspector] _simpleUI ("SimpleUI", Int ) = 0
         [HideInInspector] _utsVersion ("Version", Float ) = 2.07
@@ -15,6 +15,7 @@ Shader "UnityChanToonShader/Toon_DoubleShadeWithFeather_TransClipping_StencilOut
         [Toggle(_)] _Inverse_Clipping ("Inverse_Clipping", Float ) = 0
         _Clipping_Level ("Clipping_Level", Range(0, 1)) = 0
         _Tweak_transparency ("Tweak_transparency", Range(-1, 1)) = 0
+        _Tweak_transparency_when_stencil_passed ("Tweak_transparency_When_Stencil_Passed", Range(-1, 1)) = 0
         _MainTex ("BaseMap", 2D) = "white" {}
         [HideInInspector] _BaseMap ("BaseMap", 2D) = "white" {}
         _BaseColor ("BaseColor", Color) = (1,1,1,1)
@@ -188,11 +189,11 @@ Shader "UnityChanToonShader/Toon_DoubleShadeWithFeather_TransClipping_StencilOut
             //V.2.0.4
             #pragma multi_compile _IS_OUTLINE_CLIPPING_YES 
             #pragma multi_compile _OUTLINE_NML _OUTLINE_POS
-            //アウトライン処理は以下のUCTS_Outline.cgincへ.
-            #include "UCTS_Outline.cginc"
+            //アウトライン処理は以下のUCTS_OutlineWithAlphaBlend.cgincへ.
+            #include "UCTS_OutlineWithAlphaBlend.cginc"
             ENDCG
         }
-//ToonCoreStart
+        //ToonCoreStart
         Pass {
             Name "FORWARD"
             Tags {
@@ -226,7 +227,7 @@ Shader "UnityChanToonShader/Toon_DoubleShadeWithFeather_TransClipping_StencilOut
             //v.2.0.7
             #pragma multi_compile _EMISSIVE_SIMPLE _EMISSIVE_ANIMATION
             //
-            #include "UCTS_DoubleShadeWithFeather.cginc"
+            #include "UCTS_DoubleShadeWithFeatherWithAlphaBlend.cginc"
 
             ENDCG
         }
@@ -261,10 +262,56 @@ Shader "UnityChanToonShader/Toon_DoubleShadeWithFeather_TransClipping_StencilOut
             //v.2.0.4
             #pragma multi_compile _IS_CLIPPING_TRANSMODE
             #pragma multi_compile _IS_PASS_FWDDELTA
-            #include "UCTS_DoubleShadeWithFeather.cginc"
+            #include "UCTS_DoubleShadeWithFeatherWithAlphaBlend.cginc"
 
             ENDCG
         }
+
+        Pass{
+            Name "FORWARD_IF_STENCIL_PASSED"
+            Tags {
+                "LightMode"="ForwardBase"
+            }
+            Blend SrcAlpha OneMinusSrcAlpha
+            Cull[_CullMode]
+            
+            Stencil {
+                Ref[_StencilNo]
+                Comp Equal
+                Pass Keep
+                Fail Keep
+            }
+            
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag_
+            //#define UNITY_PASS_FORWARDBASE
+            #include "UnityCG.cginc"
+            #include "AutoLight.cginc"
+            #include "Lighting.cginc"
+            #pragma multi_compile_fwdbase_fullshadows
+            #pragma multi_compile_fog
+            #pragma only_renderers d3d9 d3d11 glcore gles gles3 metal vulkan xboxone ps4 switch
+            #pragma target 3.0
+
+            
+            float  _Tweak_transparency_when_stencil_passed;
+
+            //v.2.0.4
+            #pragma multi_compile _IS_CLIPPING_TRANSMODE
+            #pragma multi_compile _IS_PASS_FWDBASE
+            //v.2.0.7
+            #pragma multi_compile _EMISSIVE_SIMPLE _EMISSIVE_ANIMATION
+            //
+            #include "UCTS_DoubleShadeWithFeatherWithAlphaBlend.cginc"
+            float4 frag_(VertexOutput i, fixed facing : VFACE) : SV_TARGET {
+                _Tweak_transparency = _Tweak_transparency_when_stencil_passed;
+                return frag(i, facing);
+            }
+
+            ENDCG
+        }
+
         Pass {
             Name "ShadowCaster"
             Tags {
@@ -286,11 +333,11 @@ Shader "UnityChanToonShader/Toon_DoubleShadeWithFeather_TransClipping_StencilOut
             #pragma target 3.0
             //v.2.0.4
             #pragma multi_compile _IS_CLIPPING_TRANSMODE
-            #include "UCTS_ShadowCaster.cginc"
+            #include "UCTS_ShadowCasterWithAlphaBlend.cginc"
             ENDCG
         }
 //ToonCoreEnd
     }
     FallBack "Legacy Shaders/VertexLit"
-    CustomEditor "UnityChan.UTS2GUI"
+    CustomEditor "UnityChan.UTS2AlphaBlendStencilGUI"
 }
